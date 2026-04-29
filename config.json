@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+
+  "agents": {
+    "gemini_scan": {
+      "argv": ["gemini", "-p", "--output-format", "json"],
+      "input_mode": "arg",
+      "output_parser": "json",
+      "timeout_sec": 120,
+      "retries": 0
+    },
+    "claude_design": {
+      "argv": ["claude", "-p", "--output-format", "json", "--max-turns", "3"],
+      "input_mode": "arg",
+      "output_parser": "json",
+      "timeout_sec": 300,
+      "retries": 1
+    },
+    "cursor_edit": {
+      "argv": ["cursor-agent", "-p", "--output-format", "json"],
+      "input_mode": "arg",
+      "output_parser": "json",
+      "timeout_sec": 600,
+      "retries": 0,
+      "requires_worktree": true
+    },
+    "codex_verify": {
+      "argv": ["codex", "exec", "--json"],
+      "input_mode": "stdin",
+      "output_parser": "ndjson_last",
+      "timeout_sec": 300,
+      "retries": 1
+    },
+    "codex_patch": {
+      "argv": ["codex", "exec", "--json"],
+      "input_mode": "stdin",
+      "output_parser": "ndjson_last",
+      "timeout_sec": 300,
+      "retries": 0
+    }
+  },
+
+  "routes": {
+    "moderate": {
+      "steps": [
+        {"id": "scan",      "agent": "gemini_scan",  "distill": true},
+        {"id": "implement", "agent": "cursor_edit",  "input_from": "scan"},
+        {"id": "verify",    "agent": "codex_verify", "input_from": "implement"}
+      ]
+    }
+  },
+
+  "defaults": {
+    "diff_policy": {
+      "allowed_paths": [],
+      "forbidden_paths": [".env*", "*.secret", "*.lock", "node_modules/**", ".git/**"],
+      "forbidden_patterns": ["(?i)api[_-]?key\\s*=\\s*['\"][^'\"]{16,}", "(?i)password\\s*=\\s*['\"][^'\"]{8,}"],
+      "max_files": 10,
+      "max_loc": 500,
+      "check_added_lines_only": true
+    },
+    "runtime": {
+      "max_total_sec": 1800,
+      "max_correct_attempts": 1,
+      "on_timeout": "save_and_stop",
+      "on_failure": "save_reason_and_escalate"
+    },
+    "artifacts": {
+      "required": ["summary.md"],
+      "optional": ["diff.patch", "test.log", "risks.md"]
+    }
+  }
+}
