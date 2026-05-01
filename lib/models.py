@@ -6,6 +6,7 @@ class State(str, Enum):
     PLANNING = "PLANNING"
     ACTING = "ACTING"
     VERIFYING = "VERIFYING"
+    REVIEW = "REVIEW"
     CORRECTING = "CORRECTING"
     CONSOLIDATING = "CONSOLIDATING"
     ESCALATING = "ESCALATING"
@@ -20,6 +21,7 @@ class AgentConfig:
     timeout_sec: int = 300
     retries: int = 0
     requires_worktree: bool = False
+    env: dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class Step:
@@ -46,6 +48,7 @@ class TaskContract:
     steps: list[Step]
     diff_policy: DiffPolicy
     worktree_path: Optional[str] = None
+    dry_run: bool = False
 
 @dataclass
 class StepResult:

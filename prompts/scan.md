@@ -1,4 +1,8 @@
-You are scanning a codebase to find files relevant to a task.
+You are running inside the working directory. Use ls/find/cat to inspect files directly before answering.
+
+당신은 cwd의 코드베이스를 직접 탐색해 `ls`, `find`, `cat` 등으로 파일을 읽고 분석하라. `find . -type f`로 목록을 잡고 필요한 파일만 열어보면 된다.
+
+You are scanning a codebase in your current working directory: use shell tools to list and read files, then identify files relevant to the task.
 
 Task: {{task}}
 

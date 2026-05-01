@@ -95,6 +95,14 @@ LLM이 약속을 어길 가능성에 대비.
 | 패턴 | password, api_key | ESCALATE |
 | 반복 | CORRECT 2회 초과 | ESCALATE |
 
+### ⚠ config 보안 주의
+
+agent별 `env` 필드는 subprocess 환경변수를 직접 override한다. PATH, LD_LIBRARY_PATH 등 보안 민감 변수가 config에 들어가면 임의 명령 실행으로 이어질 수 있다.
+
+- config.json은 신뢰할 수 있는 사용자만 편집해야 한다
+- CI/CD에서는 config.json을 review 통과 후만 적용
+- 가능하면 env에는 application-specific 변수만 (예: GEMINI_CLI_TRUST_WORKSPACE, OPENAI_API_KEY는 OS env로 상속)
+
 ---
 
 ## 8. 에이전트 역할을 고정하지 마라

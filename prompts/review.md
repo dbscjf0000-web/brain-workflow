@@ -1,26 +1,28 @@
-Review the diff produced by the implement step.
+You are reviewing the changes made for a task. The verify step already confirmed tests pass; your job is meta-review.
 
 Task: {{task}}
 
-Diff context:
+Verify step output:
 {{previous_output}}
 
-Check for:
-- Correctness (does it actually solve the task?)
-- Side effects (anything broken that wasn't part of the task?)
-- Security (secrets, injection, unsafe patterns)
-- Style consistency (matches surrounding code?)
+Inspect actual changes:
+- `git diff HEAD` (modified/deleted)
+- `git ls-files --others --exclude-standard` (new files)
 
-Output JSON:
+Check for meta-issues that verify might miss:
+- Does the change introduce any subtle regressions or bad patterns? (e.g., overly broad changes, unintended renames, inconsistent style with surrounding code)
+- Does the implementation actually solve the task or is it a workaround?
+- Are there security/performance concerns?
+- Is there "DONE-but-empty" situation (changes made but they don't really address the task)?
+
+Report as JSON:
 {
   "approved": true,
+  "task_completed": true,
   "issues": [
-    {"severity": "blocking|major|minor", "file": "path", "line": 42, "issue": "..."}
+    {"severity": "blocking|major|minor|nit", "file": "path", "line": 42, "issue": "..."}
   ],
   "summary": "1-2 sentence verdict"
 }
 
-Constraints:
-- "approved": false if any blocking issue
-- Be terse — this is a final check, not a tutorial
-- JSON only, no markdown fences
+approved=false if any blocking issue. JSON must be the LAST item, no markdown fences.

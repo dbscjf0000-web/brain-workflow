@@ -1,117 +1,89 @@
 # 구현 로드맵
 
-> 현재 위치: **Phase 0 설계 완료, 구현 대기**
+> 현재 위치: **Phase 0 + Phase 1 + Phase 2 핵심 + 운영 명령 완료. 실사용 단계.**
 
 ---
 
-## Phase 0 — MVP (1주)
+## Phase 0 — MVP ✅ 완료
 
-**목표**: `brain run --route moderate "<task>"` 한 줄로 동작
+`brain run --route moderate "<task>"` 한 줄로 동작.
 
-### Day 1: 뼈대
-- [ ] `lib/models.py` — dataclass 정의
-- [ ] `lib/config.py` — config.json 로드/검증
-- [ ] `lib/cli.py` — argparse
-- [ ] `lib/main.py` — 진입점
-- [ ] `bin/brain` — bash 래퍼
-- [ ] `config.json` — 초기 설정
+- [x] lib/ 10개 모듈 (models/config/cli/main/runner/adapter/distiller/validator/killswitch/state)
+- [x] bin/brain bash 래퍼
+- [x] config.json + prompts/ 5개 템플릿
+- [x] 통합 테스트: end-to-end PASS 확인 (testbed에서 farewell 함수 추가 → DONE)
 
-### Day 2: 에이전트 어댑터
-- [ ] `lib/adapter.py` — `run_agent()` 핵심 함수
-- [ ] input_mode 지원: `arg`, `stdin`, `file`
-- [ ] output_parser: `json`, `ndjson_last`, `raw`
-- [ ] raw.log 항상 저장
-- [ ] 단위 테스트: echo 명령으로 시뮬레이션
+### 운영 검증 (Phase 0 사이클 중) ✅ 완료
 
-### Day 3: 시상 필터 + 프롬프트
-- [ ] `lib/distiller.py` — `distill()` 함수
-- [ ] 크기 초과 시 essentials 추출
-- [ ] schema 검증 fallback
-- [ ] `prompts/scan.md`
-- [ ] `prompts/implement.md`
-- [ ] `prompts/verify.md`
+12개 운영 이슈 발견/해결:
 
-### Day 4: 검증 + Kill-switch
-- [ ] `lib/validator.py` — `validate_diff()`
-- [ ] allowed_paths, forbidden_paths (fnmatch)
-- [ ] forbidden_patterns (re, 추가 라인만)
-- [ ] max_files, max_loc 체크
-- [ ] `lib/killswitch.py` — pre/post check
-- [ ] git clean 강제 (--allow-dirty 옵션)
-
-### Day 5: 오케스트레이션
-- [ ] `lib/runner.py` — `run()` 메인 루프
-- [ ] State 전이 (PLANNING → ACTING → VERIFYING)
-- [ ] CORRECTING 1회 (실패 시 ESCALATE)
-- [ ] CONSOLIDATING (artifacts + summary.md)
-- [ ] `lib/state.py` — state.json CRUD
-- [ ] `_save_git_diff()` — diff.patch 생성
-
-### Day 6: 통합 테스트
-- [ ] 실제 CLI 사용 시도: gemini → cursor → codex
-- [ ] 더미 프로젝트로 end-to-end 검증
-- [ ] 실패 케이스 확인 (timeout, 잘못된 JSON, allowed_paths 위반)
-- [ ] 재현성 확인 (base_sha + 같은 task → 동일 결과)
-
-### Day 7: 마무리
-- [ ] 버그 수정
-- [ ] README.md 사용법 업데이트
-- [ ] `.brain/` gitignore 추가
-- [ ] 첫 사용 노트 (실전 후기)
+- [x] #1 silent failure 차단 (빈 diff = FAILED, untracked 포함)
+- [x] #2 ndjson_last 파서 (codex output에서 agent_message 우선 추출)
+- [x] #3 verify가 task_completed 검증 (회귀+task 완수)
+- [x] #4 cursor raw 파서 전환 (parse_error 노이즈 제거)
+- [x] #5 gemini argv 수정 (`--output-format json` 옵션 없음)
+- [x] #5b agent별 env 지원 (GEMINI_CLI_TRUST_WORKSPACE)
+- [x] #6 implement fallback (scan 비어도 직접 탐색)
+- [x] #7 gemini timeout → codex_scan으로 교체
+- [x] #8 verify가 untracked 새 파일 인식
+- [x] #9 cursor `--force --trust` 추가 (새 디렉토리)
+- [x] #10 verify test_command N/A placeholder 처리
+- [x] #11 codex_patch sandbox (`--full-auto`)
 
 ---
 
-## Phase 1 — 안정화 (2주)
+## Phase 1 — 안정화 ✅ 완료
 
 ### 새 라우트
-- [ ] `--route simple`: scan/review 생략, codex_patch만
-- [ ] `--route complex`: claude_design 추가, claude_review 추가
+- [x] `--route simple`: codex_patch + verify (2 step)
+- [x] `--route complex`: scan + design + implement + verify + review (5 step, review는 Phase 2)
 
 ### Robustness
-- [ ] config.json JSON Schema 검증
-- [ ] 상위 10개 엣지케이스 처리
-  - CLI 미설치 (PATH 체크)
-  - quota/rate limit
-  - 깨진 JSON
-  - flaky test (n회 재시도 옵션)
-  - 부분 patch (apply 실패)
-  - 권한 없는 파일
-  - 큰 stdout (truncate)
-  - 비ASCII 처리
-  - 동시 실행 잠금
-  - .git이 없는 디렉토리
-- [ ] worktree 자동 생성/정리
-- [ ] decisions.md 정책 변경 시 자동 기록
-- [ ] post-run validator 고도화 (시그니처 검증, line ending 등)
+- [x] config.json JSON Schema 검증 (input_from 참조 무결성 포함)
+- [x] 엣지케이스 4건 (CLI 미설치, retries, 5MB+ output, 빈 task)
+- [x] worktree 자동 생성/정리 (moderate/complex)
+- [x] decisions.md 자동 append (DONE 시에만)
+- [x] post-run validator (changed_files, allowed/forbidden paths, max_loc)
 
 ### UX
-- [ ] `--allow-dirty` 옵션
-- [ ] `brain status` (현재 run 상태)
-- [ ] `brain replay <run-id>` (재현)
-- [ ] 컬러 출력 (ANSI)
+- [x] `--allow-dirty` 옵션
+- [x] `brain status` — 최근 N개 run 표
+- [x] `brain show <id|latest>` — 상세 보기 (steps, files, verify, FAILED 원인)
+- [x] `brain apply <id|latest>` — worktree 결과를 cwd에 적용
+- [ ] 컬러 출력 (ANSI) — 보류, 가치 낮음
 
 ---
 
-## Phase 2 — 고급 기능 (4주)
+## Phase 2 — 고급 기능 (진행 중)
 
 ### 자동화
-- [ ] 자동 복잡도 분류 (키워드 + 사용자 힌트)
-- [ ] SQLite 상태 관리 (WAL, FTS)
-- [ ] 메타인지 에이전트 (결과 자동 품질 평가)
-- [ ] 신경가소성: 성공/실패 통계 → 라우팅 가중치
+- [x] **메타인지 review step** (complex route 5번째) — verify가 놓친 이슈 catch
+- [x] **자동 복잡도 분류** (`--route auto`, 키워드 기반)
+- [ ] **신경가소성**: 성공/실패 통계 → 라우팅 가중치
+  - **차단 조건**: decisions.md에 50-100개 entry 누적 후 시작 권장
+  - 너무 일찍 만들면 학습할 데이터 부족
+- [ ] **SQLite 상태 관리** (WAL, FTS)
+  - **현재 평가**: 파일 기반으로 충분. 검색/통계 필요해질 때 도입.
 
 ### 병렬화
-- [ ] 병렬 worktree (독립 작업 동시 실행)
+- [ ] **병렬 worktree** (독립 작업 동시 실행)
+  - **시나리오 불명확**: 한 사람이 brain run을 1개씩 돌리는 패턴이라 가치 낮음
+  - 팀/CI 도입 시 재평가
 - [ ] atomic mkdir 기반 task lock
 - [ ] 작업 큐 (`brain queue add`)
 
 ### 협업 패턴
-- [ ] Debate/Critic (설계 시 에이전트 토론)
-- [ ] 다단계 review (Codex → Claude 순차)
+- [ ] Debate/Critic (설계 시 에이전트 토론) — 비용 큼, 가치 미검증
+- [ ] 다단계 review (Codex → Claude 순차) — 고비용, 보류
+
+### 추가 도구 (운영 후 가치 확인되면)
+- [ ] `brain history "keyword"` — decisions.md 검색
+- [ ] `brain logs <id>` — raw.log 빠른 접근
+- [ ] `brain dashboard` — 통계 텍스트 (성공률, 평균 duration)
 
 ---
 
-## Phase 3 — 자율 진화 (8주+)
+## Phase 3 — 자율 진화 (장기)
 
 ### 기억 시스템
 - [ ] 에피소딕 → 시맨틱 자동 통합 (망각 곡선)
@@ -134,17 +106,32 @@
 
 | 시점 | 상태 |
 |------|------|
-| Day 7 | `brain run --route moderate` 동작 |
-| Week 3 | simple/complex 추가, 엣지케이스 안정화 |
-| Week 7 | 자동 라우팅 + 병렬 실행 |
-| Week 15 | 자율 학습 + 대시보드 |
+| Phase 0 완료 | ✅ MVP + 운영 검증 |
+| Phase 1 완료 | ✅ 3개 route + 운영 명령 |
+| Phase 2 핵심 | ✅ 메타인지 + 자동 분류 |
+| Phase 2 잔여 | ⏳ 실사용 데이터 누적 후 |
+| Phase 3 | ⏳ 장기 |
 
 ---
 
-## 다음 단계
+## 우선순위 결정 기준 (실사용 시)
 
-1. **Phase 0 Day 1 시작**: `lib/models.py`부터 작성
-2. 통합 테스트 환경 준비:
-   - 더미 프로젝트 1개 (Node.js or Python)
-   - 4개 CLI 동작 확인 (gemini, claude, cursor-agent, codex)
-3. 첫 실행 목표: "README.md 한 줄 추가" 같은 trivial task로 파이프라인 검증
+남은 항목들을 언제 시작할지:
+
+| 항목 | 시작 신호 |
+|------|----------|
+| 신경가소성 | decisions.md 50+ entry 누적 시 |
+| SQLite | run history 검색이 grep으로 답답해질 때 |
+| 병렬 worktree | 동시 작업 시나리오 발생 시 |
+| Debate/Critic | 설계 결정에서 review가 자주 부족하다고 느낄 때 |
+| Vector DB 검색 | text grep으로 비슷한 task 찾기 어려울 때 |
+| Dashboard | 통계가 의사결정에 필요해질 때 |
+
+---
+
+## 다음 단계 (실사용)
+
+1. 본인 프로젝트에서 brain run을 일주일 사용
+2. 매일 `brain status`로 운영 상태 점검
+3. `.brain/decisions.md` 누적되는 동안 패턴 관찰
+4. 발견되는 부족한 점이 있으면 그때 Phase 2 잔여 항목 또는 Phase 3 시작

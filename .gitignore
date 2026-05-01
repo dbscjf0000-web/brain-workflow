@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.brain/
+*.codex
+.vscode/
+.idea/
+*.swp
+.DS_Store
+.pytest_cache

@@ -1,60 +1,176 @@
 {
   "schema_version": "1.0",
-
   "agents": {
     "gemini_scan": {
-      "argv": ["gemini", "-p", "--output-format", "json"],
+      "argv": [
+        "gemini",
+        "-p"
+      ],
       "input_mode": "arg",
       "output_parser": "json",
       "timeout_sec": 120,
-      "retries": 0
+      "retries": 0,
+      "env": {
+        "GEMINI_CLI_TRUST_WORKSPACE": "true"
+      }
     },
     "claude_design": {
-      "argv": ["claude", "-p", "--output-format", "json", "--max-turns", "3"],
+      "argv": [
+        "claude",
+        "-p",
+        "--output-format",
+        "json",
+        "--max-turns",
+        "3"
+      ],
       "input_mode": "arg",
       "output_parser": "json",
       "timeout_sec": 300,
-      "retries": 1
+      "retries": 1,
+      "requires_worktree": false
     },
     "cursor_edit": {
-      "argv": ["cursor-agent", "-p", "--output-format", "json"],
+      "argv": [
+        "cursor-agent",
+        "-p",
+        "--force",
+        "--trust",
+        "--output-format",
+        "text"
+      ],
       "input_mode": "arg",
-      "output_parser": "json",
+      "output_parser": "raw",
       "timeout_sec": 600,
       "retries": 0,
       "requires_worktree": true
     },
-    "codex_verify": {
-      "argv": ["codex", "exec", "--json"],
+    "codex_scan": {
+      "argv": [
+        "codex",
+        "exec",
+        "--skip-git-repo-check",
+        "--json"
+      ],
       "input_mode": "stdin",
       "output_parser": "ndjson_last",
-      "timeout_sec": 300,
+      "timeout_sec": 180,
+      "retries": 0
+    },
+    "codex_verify": {
+      "argv": [
+        "codex",
+        "exec",
+        "--json"
+      ],
+      "input_mode": "stdin",
+      "output_parser": "ndjson_last",
+      "timeout_sec": 600,
       "retries": 1
     },
     "codex_patch": {
-      "argv": ["codex", "exec", "--json"],
+      "argv": [
+        "codex",
+        "exec",
+        "--skip-git-repo-check",
+        "--json",
+        "--full-auto"
+      ],
       "input_mode": "stdin",
       "output_parser": "ndjson_last",
-      "timeout_sec": 300,
+      "timeout_sec": 1500,
+      "retries": 0
+    },
+    "codex_review": {
+      "argv": [
+        "codex",
+        "exec",
+        "--skip-git-repo-check",
+        "--json"
+      ],
+      "input_mode": "stdin",
+      "output_parser": "ndjson_last",
+      "timeout_sec": 180,
       "retries": 0
     }
   },
-
   "routes": {
     "moderate": {
       "steps": [
-        {"id": "scan",      "agent": "gemini_scan",  "distill": true},
-        {"id": "implement", "agent": "cursor_edit",  "input_from": "scan"},
-        {"id": "verify",    "agent": "codex_verify", "input_from": "implement"}
+        {
+          "id": "scan",
+          "agent": "codex_scan",
+          "distill": true
+        },
+        {
+          "id": "implement",
+          "agent": "cursor_edit",
+          "input_from": "scan"
+        },
+        {
+          "id": "verify",
+          "agent": "codex_verify",
+          "input_from": "implement"
+        }
+      ]
+    },
+    "simple": {
+      "steps": [
+        {
+          "id": "patch",
+          "agent": "codex_patch",
+          "distill": false
+        },
+        {
+          "id": "verify",
+          "agent": "codex_verify",
+          "input_from": "patch"
+        }
+      ]
+    },
+    "complex": {
+      "steps": [
+        {
+          "id": "scan",
+          "agent": "codex_scan",
+          "distill": true
+        },
+        {
+          "id": "design",
+          "agent": "claude_design",
+          "input_from": "scan"
+        },
+        {
+          "id": "implement",
+          "agent": "cursor_edit",
+          "input_from": "design"
+        },
+        {
+          "id": "verify",
+          "agent": "codex_verify",
+          "input_from": "implement"
+        },
+        {
+          "id": "review",
+          "agent": "codex_review",
+          "input_from": "verify"
+        }
       ]
     }
   },
-
   "defaults": {
     "diff_policy": {
       "allowed_paths": [],
-      "forbidden_paths": [".env*", "*.secret", "*.lock", "node_modules/**", ".git/**"],
-      "forbidden_patterns": ["(?i)api[_-]?key\\s*=\\s*['\"][^'\"]{16,}", "(?i)password\\s*=\\s*['\"][^'\"]{8,}"],
+      "forbidden_paths": [
+        ".env*",
+        "*.secret",
+        "*.lock",
+        "node_modules/**",
+        ".git/**"
+      ],
+      "forbidden_patterns": [
+        "(?i)api[_-]?key\\s*=\\s*['\"][^'\"]{16,}",
+        "(?i)password\\s*=\\s*['\"][^'\"]{8,}"
+      ],
       "max_files": 10,
       "max_loc": 500,
       "check_added_lines_only": true
@@ -66,8 +182,14 @@
       "on_failure": "save_reason_and_escalate"
     },
     "artifacts": {
-      "required": ["summary.md"],
-      "optional": ["diff.patch", "test.log", "risks.md"]
+      "required": [
+        "summary.md"
+      ],
+      "optional": [
+        "diff.patch",
+        "test.log",
+        "risks.md"
+      ]
     }
   }
 }

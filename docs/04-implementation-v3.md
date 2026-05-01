@@ -225,6 +225,8 @@ class TaskContract:
     base_sha: str
     steps: list[Step]
     diff_policy: DiffPolicy
+    # main.py가 None으로 만들고, runner.py가 ACTING 진입 시 step.agent의
+    # AgentConfig.requires_worktree=True면 worktree 생성 후 채운다.
     worktree_path: Optional[str] = None
 
 @dataclass
